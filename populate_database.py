@@ -11,7 +11,6 @@ from langchain_community.vectorstores import Chroma
 CHROMA_PATH = "chroma"
 DATA_PATH = "data"
 
-
 def main():
     # Check if the database should be cleared (using the --clear flag).
     parser = argparse.ArgumentParser()
