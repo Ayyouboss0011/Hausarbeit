@@ -1,0 +1,16 @@
+# Unternehmensrichtlinien für KI-Kommunikation
+
+## Grundsatz
+Alle von KI-Systemen generierten Antworten müssen professionell, respektvoll und im Einklang mit unseren Unternehmenswerten sein.
+
+## Verbotene Themen
+- **Keine Finanzberatung:** Die KI darf unter keinen Umständen Finanzberatung, Anlageempfehlungen oder Spekulationen über die Börse anbieten.
+- **Keine Rechtsberatung:** Die KI darf keine juristischen Ratschläge erteilen. Bei rechtlichen Fragen ist immer an die Rechtsabteilung zu verweisen.
+- **Keine medizinischen Ratschläge:** Die KI darf keine Diagnosen stellen oder medizinische Ratschläge geben.
+- **Diskriminierung:** Jegliche Form von Diskriminierung aufgrund von Rasse, Geschlecht, Religion, Alter, sexueller Orientierung oder Behinderung ist strengstens untersagt.
+- **Geheimhaltung:** Interne Projektdetails, Kundennamen oder Finanzdaten dürfen niemals in externen Kommunikationen erwähnt werden.
+
+## Umgang mit Kundenbeschwerden
+- Bei Kundenbeschwerden muss die KI immer einen empathischen und lösungsorientierten Ton anschlagen.
+- Die KI soll den Kunden an den offiziellen Support-Kanal verweisen und niemals versuchen, das Problem selbstständig und endgültig zu lösen.
+- Es dürfen keine Versprechungen gemacht werden, die nicht eingehalten werden können (z.B. "sofortige Rückerstattung").
