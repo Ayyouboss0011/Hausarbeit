@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { supabase } from "../lib/supabaseClient";
 import { useDropzone } from "react-dropzone";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,7 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Edit, Trash2, Shield, AlertTriangle, UploadCloud } from "lucide-react";
+import { Plus, Edit, Trash2, Shield, AlertTriangle, UploadCloud, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Policy {
@@ -55,43 +56,12 @@ interface Policy {
   lastModified: string;
 }
 
-const mockPolicies: Policy[] = [
-  {
-    id: "1",
-    name: "Financial Data Protection",
-    description: "Prevents sharing of financial projections, budgets, and revenue data",
-    keywords: ["revenue", "budget", "financial", "profit", "earnings"],
-    severity: "high",
-    status: "active",
-    created: "2024-01-15",
-    lastModified: "2024-01-18"
-  },
-  {
-    id: "2",
-    name: "Customer PII Protection",
-    description: "Blocks personally identifiable information about customers",
-    keywords: ["email", "phone", "address", "ssn", "customer data"],
-    severity: "high",
-    status: "active",
-    created: "2024-01-10",
-    lastModified: "2024-01-16"
-  },
-  {
-    id: "3",
-    name: "Internal Project Names",
-    description: "Prevents disclosure of confidential project codenames",
-    keywords: ["project alpha", "project beta", "codename", "internal project"],
-    severity: "medium",
-    status: "active",
-    created: "2024-01-12",
-    lastModified: "2024-01-17"
-  }
-];
-
 export default function PolicyManagement() {
-  const [policies, setPolicies] = useState<Policy[]>(mockPolicies);
+  const [policies, setPolicies] = useState<Policy[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingPolicy, setEditingPolicy] = useState<Policy | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   const [newPolicy, setNewPolicy] = useState({
     name: "",
     description: "",
@@ -100,6 +70,29 @@ export default function PolicyManagement() {
   });
   const [file, setFile] = useState<File | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchPolicies();
+  }, []);
+
+  const fetchPolicies = async () => {
+    const { data, error } = await supabase.from("policymanagement").select();
+    if (error) {
+      console.error("Error fetching policies:", error);
+      toast({
+        title: "Error",
+        description: "Could not fetch policies.",
+        variant: "destructive",
+      });
+    } else {
+      // Ensure keywords are arrays
+      const formattedData = data.map(p => ({
+        ...p,
+        keywords: Array.isArray(p.keywords) ? p.keywords : p.keywords.split(',').map((k: string) => k.trim()),
+      }));
+      setPolicies(formattedData);
+    }
+  };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFile(acceptedFiles[0]);
@@ -124,6 +117,7 @@ export default function PolicyManagement() {
       return;
     }
 
+    setIsCreating(true);
     const formData = new FormData();
     formData.append("file", file);
     formData.append("name", newPolicy.name);
@@ -143,7 +137,7 @@ export default function PolicyManagement() {
 
       const result = await response.json();
 
-      const policy: Policy = {
+      const newPolicyData: Policy = {
         id: result.id,
         name: newPolicy.name,
         description: newPolicy.description,
@@ -154,14 +148,22 @@ export default function PolicyManagement() {
         lastModified: new Date().toISOString().split('T')[0]
       };
 
-      setPolicies([...policies, policy]);
+      const { error: insertError } = await supabase
+        .from("policymanagement")
+        .insert([newPolicyData]);
+
+      if (insertError) {
+        throw new Error(insertError.message);
+      }
+
+      setPolicies([...policies, newPolicyData]);
       setIsAddDialogOpen(false);
       setNewPolicy({ name: "", description: "", keywords: "", severity: "medium" });
       setFile(null);
       
       toast({
         title: "Policy Added",
-        description: `${policy.name} has been created successfully.`,
+        description: `${newPolicyData.name} has been created successfully.`,
       });
     } catch (error) {
       toast({
@@ -169,15 +171,52 @@ export default function PolicyManagement() {
         description: "There was an error uploading the policy.",
         variant: "destructive",
       });
+    } finally {
+      setIsCreating(false);
     }
   };
 
-  const handleDeletePolicy = (id: string) => {
-    setPolicies(policies.filter(p => p.id !== id));
-    toast({
-      title: "Policy Deleted",
-      description: "The policy has been removed successfully.",
-    });
+  const handleDeletePolicy = async (id: string) => {
+    setDeletingId(id);
+    try {
+      // 1. Delete from Supabase
+      const { error: deleteError } = await supabase
+        .from("policymanagement")
+        .delete()
+        .match({ id });
+
+      if (deleteError) {
+        toast({
+          title: "Deletion Failed",
+          description: "Could not delete policy from the database.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // 2. Delete from Qdrant via backend
+      const response = await fetch(`http://localhost:8000/delete-policy/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete policy from Qdrant");
+      }
+
+      setPolicies(policies.filter(p => p.id !== id));
+      toast({
+        title: "Policy Deleted",
+        description: "The policy has been removed successfully.",
+      });
+    } catch (error) {
+       toast({
+        title: "Deletion Failed",
+        description: "The policy was removed from the database, but failed to be removed from the vector store.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const getSeverityColor = (severity: string) => {
@@ -275,10 +314,11 @@ export default function PolicyManagement() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={isCreating}>
                 Cancel
               </Button>
-              <Button onClick={handleAddPolicy} className="bg-guardian hover:bg-guardian-dark">
+              <Button onClick={handleAddPolicy} className="bg-guardian hover:bg-guardian-dark" disabled={isCreating}>
+                {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Policy
               </Button>
             </DialogFooter>
@@ -287,7 +327,7 @@ export default function PolicyManagement() {
       </div>
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="shadow-card border-card-border">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -320,19 +360,6 @@ export default function PolicyManagement() {
                 <p className="text-2xl font-bold text-status-danger">{policies.filter(p => p.severity === 'high').length}</p>
               </div>
               <AlertTriangle className="w-8 h-8 text-status-danger" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="shadow-card border-card-border">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-neutral-600">Triggers Today</p>
-                <p className="text-2xl font-bold text-neutral-900">47</p>
-              </div>
-              <div className="w-8 h-8 bg-guardian/10 rounded-full flex items-center justify-center">
-                <span className="text-sm font-bold text-guardian">47</span>
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -395,33 +422,39 @@ export default function PolicyManagement() {
                   <TableCell>{policy.lastModified}</TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      <Button variant="ghost" size="sm">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="text-status-danger hover:text-status-danger">
-                            <Trash2 className="w-4 h-4" />
+                      {deletingId === policy.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Button variant="ghost" size="sm" disabled={!!deletingId}>
+                            <Edit className="w-4 h-4" />
                           </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-white">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Policy</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete "{policy.name}"? This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={() => handleDeletePolicy(policy.id)}
-                              className="bg-status-danger hover:bg-status-danger/90"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="text-status-danger hover:text-status-danger" disabled={!!deletingId}>
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="bg-white">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Policy</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{policy.name}"? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => handleDeletePolicy(policy.id)}
+                                  className="bg-status-danger hover:bg-status-danger/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

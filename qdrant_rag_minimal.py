@@ -322,6 +322,26 @@ def cmd_add_document(args):
     print(f"✓ Indexed {len(chunks)} chunks into '{args.collection}'. Total points: {count}")
 
 
+def cmd_delete_document(args):
+    client = get_qdrant_client()
+    print(f"→ Deleting document with doc_id '{args.doc_id}' from collection '{args.collection}'…")
+
+    client.delete(
+        collection_name=args.collection,
+        points_selector=models.FilterSelector(
+            filter=models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="doc_id",
+                        match=models.MatchValue(value=args.doc_id),
+                    ),
+                ]
+            )
+        ),
+    )
+    print(f"✓ Deleted document chunks from '{args.collection}'")
+
+
 def cmd_index(args):
     data_dir = Path(args.data_dir)
     assert data_dir.exists(), f"Data dir not found: {data_dir}"
@@ -408,6 +428,11 @@ def build_arg_parser():
     p_add.add_argument("--metadata", type=str, help="JSON string of metadata to attach to the document")
     p_add.add_argument("--embedding_model", default=None)
     p_add.set_defaults(func=cmd_add_document)
+
+    p_del = sub.add_parser("delete-document", help="Delete a document and its chunks from the collection")
+    p_del.add_argument("--collection", required=True)
+    p_del.add_argument("--doc_id", required=True)
+    p_del.set_defaults(func=cmd_delete_document)
 
     p_q = sub.add_parser("query", help="Query the collection and generate an answer")
     p_q.add_argument("--collection", required=True)

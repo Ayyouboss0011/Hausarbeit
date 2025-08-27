@@ -120,6 +120,29 @@ def upload_policy():
 
     return jsonify({"error": "File type not allowed"}), 400
 
+@app.route('/delete-policy/<policy_id>', methods=['DELETE'])
+def delete_policy(policy_id):
+    """
+    Endpoint to delete a policy's documents from the Qdrant collection.
+    """
+    print(f"Deleting document with ID: {policy_id}")
+    
+    command = [
+        "python",
+        QDRANT_SCRIPT,
+        "delete-document",
+        "--collection",
+        COLLECTION_NAME,
+        "--doc_id",
+        policy_id
+    ]
+    
+    try:
+        subprocess.run(command, check=True)
+        return jsonify({"message": "Policy deleted successfully from Qdrant"}), 200
+    except subprocess.CalledProcessError as e:
+        return jsonify({"error": f"Failed to delete policy from Qdrant: {e}"}), 500
+
 @app.route('/prompt-testing', methods=['POST'])
 def prompt_testing():
     """
