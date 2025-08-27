@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* GuardianAI Enterprise Security Dashboard Design System */
+
+@layer base {
+  :root {
+    /* Enterprise Background System */
+    --background: 0 0% 100%;
+    --foreground: 218 11% 15%;
+    
+    /* GuardianAI Brand Colors */
+    --guardian-blue: 218 58% 42%;
+    --guardian-blue-light: 218 58% 52%;
+    --guardian-blue-dark: 218 58% 32%;
+    
+    /* Security Status Colors */
+    --status-safe: 142 76% 36%;
+    --status-safe-light: 142 76% 46%;
+    --status-danger: 0 84% 60%;
+    --status-danger-light: 0 84% 70%;
+    --status-warning: 38 92% 50%;
+    --status-warning-light: 38 92% 60%;
+    
+    /* Neutral System */
+    --neutral-50: 218 11% 97%;
+    --neutral-100: 218 11% 93%;
+    --neutral-200: 218 11% 87%;
+    --neutral-300: 218 11% 73%;
+    --neutral-400: 218 11% 55%;
+    --neutral-500: 218 11% 40%;
+    --neutral-600: 218 11% 30%;
+    --neutral-700: 218 11% 22%;
+    --neutral-800: 218 11% 15%;
+    --neutral-900: 218 11% 10%;
+    
+    /* Component System */
+    --card: 0 0% 100%;
+    --card-foreground: 218 11% 15%;
+    --card-border: 218 11% 93%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 218 11% 15%;
+    
+    --primary: 218 58% 42%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 218 58% 37%;
+    
+    --secondary: 218 11% 97%;
+    --secondary-foreground: 218 58% 42%;
+    --secondary-hover: 218 11% 93%;
+    
+    --muted: 218 11% 97%;
+    --muted-foreground: 218 11% 40%;
+    
+    --accent: 218 11% 97%;
+    --accent-foreground: 218 58% 42%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 218 11% 93%;
+    --input: 218 11% 93%;
+    --ring: 218 58% 42%;
+    
+    /* Enterprise Shadows */
+    --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-elevated: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-modal: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    
+    /* Gradients */
+    --gradient-guardian: linear-gradient(135deg, hsl(var(--guardian-blue)), hsl(var(--guardian-blue-light)));
+    --gradient-safe: linear-gradient(135deg, hsl(var(--status-safe)), hsl(var(--status-safe-light)));
+    --gradient-danger: linear-gradient(135deg, hsl(var(--status-danger)), hsl(var(--status-danger-light)));
+    
+    /* Transitions */
+    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-modal: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
