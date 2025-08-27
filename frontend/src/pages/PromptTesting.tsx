@@ -15,6 +15,7 @@ const PromptTesting = () => {
   const [prompt, setPrompt] = useState("");
   const [response, setResponse] = useState("");
   const [safetyStatus, setSafetyStatus] = useState(null);
+  const [safetyReason, setSafetyReason] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -24,7 +25,7 @@ const PromptTesting = () => {
     setSafetyStatus(null);
 
     try {
-      const response = await fetch('http://127.0.0.1:5000/prompt-testing', {
+      const response = await fetch('http://127.0.0.1:5001/prompt-testing', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -37,8 +38,9 @@ const PromptTesting = () => {
       }
 
       const data = await response.json();
-      setResponse(data.response);
-      setSafetyStatus(data.safetyStatus);
+      setResponse(data.llm_response);
+      setSafetyStatus(data.guardian_evaluation.safety_level);
+      setSafetyReason(data.guardian_evaluation.reason);
     } catch (error) {
       console.error("Failed to fetch:", error);
       setResponse("Failed to get a response from the server.");
@@ -85,17 +87,36 @@ const PromptTesting = () => {
           <CardContent className="space-y-4">
             {isLoading && <p>Loading...</p>}
             {response && <p className="text-sm">{response}</p>}
-            {safetyStatus && (
-              <div>
+          </CardContent>
+        </Card>
+        {safetyStatus && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>GuardianAI Evaluation</CardTitle>
+              <CardDescription>
+                The safety analysis of the AI's response.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center space-x-2">
+                <span className="font-medium">Status:</span>
                 <Badge
                   variant={safetyStatus === "safe" ? "default" : "destructive"}
                 >
                   {safetyStatus}
                 </Badge>
               </div>
-            )}
-          </CardContent>
-        </Card>
+              {safetyReason && safetyStatus !== "safe" && (
+                <div className="mt-4">
+                  <p className="font-medium">Reason:</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {safetyReason}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

@@ -189,7 +189,7 @@ def embed_texts_fastembed(texts: List[str], model_name: Optional[str] = None) ->
     return vectors, dim
 
 
-def upsert_chunks(client: QdrantClient, collection: str, chunks: List[DocChunk], model_name: Optional[str] = None) -> None:
+def upsert_chunks(client: QdrantClient, collection: str, chunks: List[DocChunk], model_name: Optional[str] = None, metadata: Optional[dict] = None) -> None:
     batch_size = 128
     for i in range(0, len(chunks), batch_size):
         batch = chunks[i:i+batch_size]
@@ -197,19 +197,26 @@ def upsert_chunks(client: QdrantClient, collection: str, chunks: List[DocChunk],
         # Ensure collection exists with the right size
         if i == 0:
             ensure_collection(client, collection, vector_size=dim, enable_sparse=False)
-        points = [
-            models.PointStruct(
-                id=c.id,
-                vector=vectors[j],
-                payload={
-                    "text": c.text,
-                    "doc_id": c.doc_id,
-                    "source": c.source,
-                    "chunk_index": c.chunk_index,
-                },
+        
+        points = []
+        for j, c in enumerate(batch):
+            payload = {
+                "text": c.text,
+                "doc_id": c.doc_id,
+                "source": c.source,
+                "chunk_index": c.chunk_index,
+            }
+            if metadata:
+                payload.update(metadata)
+            
+            points.append(
+                models.PointStruct(
+                    id=c.id,
+                    vector=vectors[j],
+                    payload=payload,
+                )
             )
-            for j, c in enumerate(batch)
-        ]
+        
         client.upsert(collection_name=collection, points=points)
 
 
@@ -273,6 +280,47 @@ def generate_answer(query: str, contexts: List[str]) -> str:
 
 
 # --------------------------- CLI ------------------------------------------- #
+
+def cmd_add_document(args):
+    filepath = Path(args.filepath)
+    assert filepath.exists(), f"File not found: {filepath}"
+
+    print(f"→ Processing document: {filepath}")
+    
+    try:
+        metadata = json.loads(args.metadata) if args.metadata else {}
+    except json.JSONDecodeError:
+        print("Error: Invalid JSON in metadata argument.")
+        return
+
+    raw = load_text_from_file(filepath)
+    text = normalize_ws(raw)
+    
+    if not text:
+        print("Error: No text could be extracted from the document.")
+        return
+
+    doc_id = metadata.get("id", str(uuid.uuid4()))
+    parts = text_to_chunks(text)
+    chunks = [
+        DocChunk(
+            id=str(uuid.uuid4()),
+            text=part,
+            doc_id=doc_id,
+            source=str(filepath),
+            chunk_index=i,
+        )
+        for i, part in enumerate(parts)
+    ]
+
+    client = get_qdrant_client()
+    qdrant_url = os.getenv("QDRant_URL", "http://localhost:6333")
+    print(f"→ Connecting to Qdrant at {qdrant_url}")
+
+    upsert_chunks(client, args.collection, chunks, model_name=args.embedding_model, metadata=metadata)
+    count = client.count(collection_name=args.collection, exact=True).count
+    print(f"✓ Indexed {len(chunks)} chunks into '{args.collection}'. Total points: {count}")
+
 
 def cmd_index(args):
     data_dir = Path(args.data_dir)
@@ -353,6 +401,13 @@ def build_arg_parser():
     p_idx.add_argument("--embedding_model", default=None,
                        help="FastEmbed model alias (default: sentence-transformers/all-MiniLM-L6-v2)")
     p_idx.set_defaults(func=cmd_index)
+
+    p_add = sub.add_parser("add-document", help="Add a single document to the collection")
+    p_add.add_argument("--collection", required=True)
+    p_add.add_argument("--filepath", required=True)
+    p_add.add_argument("--metadata", type=str, help="JSON string of metadata to attach to the document")
+    p_add.add_argument("--embedding_model", default=None)
+    p_add.set_defaults(func=cmd_add_document)
 
     p_q = sub.add_parser("query", help="Query the collection and generate an answer")
     p_q.add_argument("--collection", required=True)

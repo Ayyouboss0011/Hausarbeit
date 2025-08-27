@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { useDropzone } from "react-dropzone";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,7 +41,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Edit, Trash2, Shield, AlertTriangle } from "lucide-react";
+import { Plus, Edit, Trash2, Shield, AlertTriangle, UploadCloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Policy {
@@ -97,28 +98,78 @@ export default function PolicyManagement() {
     keywords: "",
     severity: "medium" as const
   });
+  const [file, setFile] = useState<File | null>(null);
   const { toast } = useToast();
 
-  const handleAddPolicy = () => {
-    const policy: Policy = {
-      id: Date.now().toString(),
-      name: newPolicy.name,
-      description: newPolicy.description,
-      keywords: newPolicy.keywords.split(",").map(k => k.trim()),
-      severity: newPolicy.severity,
-      status: "active",
-      created: new Date().toISOString().split('T')[0],
-      lastModified: new Date().toISOString().split('T')[0]
-    };
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    setFile(acceptedFiles[0]);
+  }, []);
 
-    setPolicies([...policies, policy]);
-    setIsAddDialogOpen(false);
-    setNewPolicy({ name: "", description: "", keywords: "", severity: "medium" });
-    
-    toast({
-      title: "Policy Added",
-      description: `${policy.name} has been created successfully.`,
-    });
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf'],
+      'text/plain': ['.txt'],
+    },
+    maxFiles: 1,
+  });
+
+  const handleAddPolicy = async () => {
+    if (!file) {
+      toast({
+        title: "No File Selected",
+        description: "Please upload a policy document.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("name", newPolicy.name);
+    formData.append("description", newPolicy.description);
+    formData.append("keywords", newPolicy.keywords);
+    formData.append("severity", newPolicy.severity);
+
+    try {
+      const response = await fetch("http://localhost:8000/upload-policy", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload policy");
+      }
+
+      const result = await response.json();
+
+      const policy: Policy = {
+        id: result.id,
+        name: newPolicy.name,
+        description: newPolicy.description,
+        keywords: newPolicy.keywords.split(",").map(k => k.trim()),
+        severity: newPolicy.severity,
+        status: "active",
+        created: new Date().toISOString().split('T')[0],
+        lastModified: new Date().toISOString().split('T')[0]
+      };
+
+      setPolicies([...policies, policy]);
+      setIsAddDialogOpen(false);
+      setNewPolicy({ name: "", description: "", keywords: "", severity: "medium" });
+      setFile(null);
+      
+      toast({
+        title: "Policy Added",
+        description: `${policy.name} has been created successfully.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Upload Failed",
+        description: "There was an error uploading the policy.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDeletePolicy = (id: string) => {
@@ -200,6 +251,27 @@ export default function PolicyManagement() {
                     <SelectItem value="high">High</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>Upload Policy Document</Label>
+                <div
+                  {...getRootProps()}
+                  className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer ${
+                    isDragActive ? "border-guardian" : "border-neutral-300"
+                  }`}
+                >
+                  <input {...getInputProps()} />
+                  <UploadCloud className="w-12 h-12 mx-auto text-neutral-400" />
+                  {file ? (
+                    <p className="mt-2 text-neutral-600">{file.name}</p>
+                  ) : (
+                    <p className="mt-2 text-neutral-600">
+                      {isDragActive
+                        ? "Drop the file here..."
+                        : "Drag 'n' drop a PDF or TXT file here, or click to select a file"}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
             <DialogFooter>
