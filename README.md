@@ -18,7 +18,7 @@ GuardianAI ist ein System, das als Sicherheitsschicht für den Einsatz von KI in
 -   `qdrant_utils.py`: Enthält die Kernlogik für die RAG-Pipeline.
 -   `guardian_ai.py`: Enthält die Logik zur Evaluierung von Texten und das Pydantic-Modell für den strukturierten Output.
 -   `app.py`: Eine Beispielanwendung, die den gesamten End-to-End-Workflow demonstriert.
--   `guardian_data/`: Ein Verzeichnis, das die Unternehmensrichtlinien enthält, die in die Wissensdatenbank indiziert werden sollen.
+-   `sample_policies/`: Ein Verzeichnis, das die Unternehmensrichtlinien enthält, die in die Wissensdatenbank indiziert werden sollen.
 -   `requirements.txt`: Die erforderlichen Python-Abhängigkeiten.
 -   `qdrant_rag_minimal.py`: Das ursprüngliche Kernskript (jetzt refaktorisiert, um `qdrant_utils` zu verwenden).
 
@@ -40,38 +40,50 @@ source .venv/bin/activate  # Auf Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-**c) API-Schlüssel:**
-Erstellen Sie eine `.env`-Datei und fügen Sie Ihren Groq-API-Schlüssel hinzu:
+**c) API-Schlüssel und Konfiguration:**
+Erstellen Sie eine `.env`-Datei und fügen Sie Ihren Groq-API-Schlüssel hinzu. Sie können hier auch die URL für Ihre Qdrant-Instanz festlegen, falls diese vom Standard (`http://localhost:6333`) abweicht.
 ```
 GROQ_API_KEY="Ihr_Groq_API_Schlüssel"
+# QDRANT_URL="http://ihre-qdrant-url:6333" # Optional
 ```
 
 ### 2. Verwendung des `guardian-cli` Tools
 
 Das `guardian-cli` Tool bietet eine einfache Schnittstelle zur Verwaltung Ihrer Daten.
 
-**a) Indizierung der Richtlinien:**
-Indizieren Sie die Beispieldaten in Ihre Qdrant-Datenbank.
+**a) Sammlungen auflisten:**
+Listet alle verfügbaren Sammlungen in Qdrant auf.
 ```bash
-python guardian_cli.py index --collection guardianai_policies --data-dir ./guardian_data
+python guardian_cli.py list-collections
 ```
 
-**b) Hinzufügen eines einzelnen Dokuments:**
+**b) Dokumente in einer Sammlung auflisten:**
+```bash
+python guardian_cli.py list-documents --collection guardianai_policies
+```
+
+**c) Indizierung der Richtlinien:**
+Indizieren Sie die Beispieldaten in Ihre Qdrant-Datenbank.
+```bash
+python guardian_cli.py index --collection guardianai_policies --data-dir ./sample_policies
+```
+
+**d) Hinzufügen eines einzelnen Dokuments:**
 ```bash
 python guardian_cli.py add-document --collection guardianai_policies --filepath ./path/to/your/document.txt
 ```
 
-**c) Abfragen der Datenbank:**
+**e) Abfragen der Datenbank:**
 ```bash
 python guardian_cli.py query --collection guardianai_policies -q "Wie funktioniert unser Onboarding?"
 ```
 
-**d) Evaluierung eines Textes:**
+**f) Evaluierung eines Textes:**
 ```bash
 python guardian_cli.py evaluate --collection guardianai_policies --text "Ich kann Ihnen eine sofortige Rückerstattung anbieten."
 ```
 
-**e) Löschen eines Dokuments:**
+**g) Löschen eines Dokuments:**
 ```bash
 python guardian_cli.py delete-document --collection guardianai_policies --doc-id "your-document-id"
 ```
