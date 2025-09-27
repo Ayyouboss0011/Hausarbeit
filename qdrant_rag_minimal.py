@@ -158,8 +158,7 @@ def build_arg_parser():
     p_idx = sub.add_parser("index", help="Index documents from a folder")
     p_idx.add_argument("--collection", required=True)
     p_idx.add_argument("--data_dir", required=True)
-    p_idx.add_argument("--embedding_model", default=None,
-                       help="FastEmbed model alias (default: sentence-transformers/all-MiniLM-L6-v2)")
+    p_idx.add_argument("--embedding_model", default=None, help="FastEmbed model alias (default: sentence-transformers/all-MiniLM-L6-v2)")
     p_idx.set_defaults(func=cmd_index)
 
     p_add = sub.add_parser("add-document", help="Add a single document to the collection")
