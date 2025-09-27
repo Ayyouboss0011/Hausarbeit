@@ -153,7 +153,13 @@ def upsert_chunks(client: QdrantClient, collection: str, chunks: List[DocChunk],
         client.upsert(collection_name=collection, points=points)
 
 
-def search(client: QdrantClient, collection: str, query: str, top_k: int = 8) -> List[models.ScoredPoint]:
+def search(
+    client: QdrantClient,
+    collection: str,
+    query: str,
+    top_k: int = 8,
+    score_threshold: Optional[float] = None,
+) -> List[models.ScoredPoint]:
     qvecs, _ = embed_texts_fastembed([query])
     if not qvecs:
         return []
@@ -161,6 +167,7 @@ def search(client: QdrantClient, collection: str, query: str, top_k: int = 8) ->
         collection_name=collection,
         query_vector=qvecs[0],
         limit=top_k,
+        score_threshold=score_threshold,
         with_payload=True,
         with_vectors=False,
     )

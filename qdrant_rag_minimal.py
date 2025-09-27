@@ -107,7 +107,13 @@ def cmd_query(args):
     client = get_qdrant_client()
     print(f"→ Searching in collection '{args.collection}'…")
 
-    hits = search(client, args.collection, args.query, top_k=args.top_k)
+    hits = search(
+        client,
+        args.collection,
+        args.query,
+        top_k=args.top_k,
+        score_threshold=args.score_threshold,
+    )
     if args.rerank:
         hits = rerank(args.query, hits)
 
@@ -135,7 +141,13 @@ def cmd_evaluate(args):
     client = get_qdrant_client()
     print(f"→ Evaluating text against collection '{args.collection}'…")
 
-    hits = search(client, args.collection, args.text, top_k=args.top_k)
+    hits = search(
+        client,
+        args.collection,
+        args.text,
+        top_k=args.top_k,
+        score_threshold=args.score_threshold,
+    )
     if args.rerank:
         hits = rerank(args.text, hits)
 
@@ -180,6 +192,12 @@ def build_arg_parser():
     p_q.add_argument("--max_ctx", type=int, default=4)
     p_q.add_argument("--rerank", action="store_true")
     p_q.add_argument("--show_context", action="store_true")
+    p_q.add_argument(
+        "--score_threshold",
+        type=float,
+        default=float(os.getenv("SCORE_THRESHOLD", 0.2)),
+        help="Similarity score threshold",
+    )
     p_q.set_defaults(func=cmd_query)
 
     p_eval = sub.add_parser("evaluate", help="Evaluate a text against the collection for safety.")
@@ -188,6 +206,12 @@ def build_arg_parser():
     p_eval.add_argument("--top_k", type=int, default=5)
     p_eval.add_argument("--max_ctx", type=int, default=5)
     p_eval.add_argument("--rerank", action="store_true")
+    p_eval.add_argument(
+        "--score_threshold",
+        type=float,
+        default=float(os.getenv("SCORE_THRESHOLD", 0.2)),
+        help="Similarity score threshold",
+    )
     p_eval.set_defaults(func=cmd_evaluate)
 
     return p

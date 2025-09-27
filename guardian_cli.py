@@ -163,11 +163,23 @@ def delete_document(collection, doc_id):
 @click.option("--max-ctx", type=int, default=4, help="Maximum context snippets to use.")
 @click.option("--rerank/--no-rerank", "use_rerank", default=False, help="Enable or disable reranking.")
 @click.option("--show-context/--no-show-context", default=False, help="Show context snippets in output.")
-def query(collection, query_text, top_k, max_ctx, use_rerank, show_context):
+@click.option(
+    "--score-threshold",
+    type=float,
+    default=lambda: float(os.getenv("SCORE_THRESHOLD", 0.2)),
+    help="Similarity score threshold.",
+)
+def query(collection, query_text, top_k, max_ctx, use_rerank, show_context, score_threshold):
     client = get_qdrant_client()
-    click.echo(f"→ Searching in collection '{collection}'…")
+    click.echo(f"→ Searching in collection '{collection}' with score_threshold={score_threshold}…")
 
-    hits = search(client, collection, query_text, top_k=top_k)
+    hits = search(
+        client,
+        collection,
+        query_text,
+        top_k=top_k,
+        score_threshold=score_threshold,
+    )
     if use_rerank:
         hits = rerank(query_text, hits)
 
@@ -196,11 +208,23 @@ def query(collection, query_text, top_k, max_ctx, use_rerank, show_context):
 @click.option("--top-k", type=int, default=5, help="Number of results for context.")
 @click.option("--max-ctx", type=int, default=5, help="Maximum context snippets for evaluation.")
 @click.option("--rerank/--no-rerank", "use_rerank", default=False, help="Enable or disable reranking for context retrieval.")
-def evaluate(collection, text, top_k, max_ctx, use_rerank):
+@click.option(
+    "--score-threshold",
+    type=float,
+    default=lambda: float(os.getenv("SCORE_THRESHOLD", 0.2)),
+    help="Similarity score threshold.",
+)
+def evaluate(collection, text, top_k, max_ctx, use_rerank, score_threshold):
     client = get_qdrant_client()
-    click.echo(f"→ Evaluating text against collection '{collection}'…")
+    click.echo(f"→ Evaluating text against collection '{collection}' with score_threshold={score_threshold}…")
 
-    hits = search(client, collection, text, top_k=top_k)
+    hits = search(
+        client,
+        collection,
+        text,
+        top_k=top_k,
+        score_threshold=score_threshold,
+    )
     if use_rerank:
         hits = rerank(text, hits)
 
