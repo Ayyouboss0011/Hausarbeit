@@ -93,7 +93,7 @@ python guardian_cli.py delete-document --collection guardianai_policies --doc-id
 Starten Sie die Beispielanwendung, um den GuardianAI-Workflow in Aktion zu sehen:
 
 ```bash
-python app.py
+python demo_app.py
 ```
 
 Die Anwendung wird Sie auffordern, eine Frage zu stellen. Sie simuliert dann eine Antwort von einem primären LLM und lässt diese von GuardianAI bewerten.
