@@ -1,0 +1,13 @@
+qdrant-client
+fastembed
+sentence-transformers
+groq
+python-dotenv
+transformers
+torch
+pypdf
+pydantic
+Flask
+Flask-Cors
+click
+huggingface-hub
