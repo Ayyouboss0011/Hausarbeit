@@ -156,10 +156,14 @@ def cmd_evaluate(args):
     if not contexts:
         print("\n⚠️  Warning: No relevant context found in the database. Evaluation may be unreliable.")
 
-    evaluation = evaluate_text(args.text, contexts)
-
-    print("\n=== GuardianAI Evaluation ===\n")
-    print(json.dumps(evaluation.model_dump(), indent=2))
+    try:
+        evaluation = evaluate_text(args.text, contexts)
+        print("\n=== GuardianAI Evaluation ===\n")
+        print(json.dumps(evaluation.model_dump(), indent=2))
+    except Exception as e:
+        print(f"\nAn error occurred during evaluation: {e}")
+        # Exit with a non-zero status code to indicate failure
+        exit(1)
 
 
 def build_arg_parser():

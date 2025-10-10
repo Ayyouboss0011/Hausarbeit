@@ -41,8 +41,12 @@ def run_guardian_evaluation(text_to_evaluate: str) -> dict:
         result = subprocess.run(command, capture_output=True, text=True, check=True)
         json_output_str = result.stdout[result.stdout.find('{'):]
         return json.loads(json_output_str)
-    except (subprocess.CalledProcessError, json.JSONDecodeError, IndexError) as e:
-        print(f"GuardianAI evaluation failed: {e}")
+    except subprocess.CalledProcessError as e:
+        print(f"GuardianAI evaluation failed. Subprocess error: {e}")
+        print(f"Stderr: {e.stderr}")
+        return {"safety_level": "not safe", "reason": "GuardianAI system error."}
+    except (json.JSONDecodeError, IndexError) as e:
+        print(f"GuardianAI evaluation failed. JSON or parsing error: {e}")
         return {"safety_level": "not safe", "reason": "GuardianAI system error."}
 
 def main():
